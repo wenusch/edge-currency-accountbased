@@ -10,6 +10,7 @@ import type {
   EdgeEncodeUri,
   EdgeCurrencyPlugin,
   EdgeCurrencyPluginFactory,
+  EdgeParsedUri,
   EdgeWalletInfo
 } from 'edge-core-js'
 import { getDenomInfo } from '../common/utils.js'
@@ -42,7 +43,7 @@ class EosPlugin extends CurrencyPlugin {
   constructor () {
     super('eos', currencyInfo)
   }
-  createPrivateKey (walletType: string) {
+  async createPrivateKey (walletType: string): Promise<Object> {
     const type = walletType.replace('wallet:', '')
 
     if (type === 'eos') {
@@ -60,7 +61,7 @@ class EosPlugin extends CurrencyPlugin {
     }
   }
 
-  derivePublicKey (walletInfo: EdgeWalletInfo) {
+  async derivePublicKey (walletInfo: EdgeWalletInfo): Promise<Object> {
     const type = walletInfo.type.replace('wallet:', '')
     if (type === 'eos') {
       // TODO: User currency library to derive the public keys/addresses from the private key.
@@ -102,7 +103,7 @@ class EosPlugin extends CurrencyPlugin {
     return out
   }
 
-  parseUri (uri: string) {
+  async parseUri (uri: string): Promise<EdgeParsedUri> {
     const { edgeParsedUri } = this.parseUriCommon(currencyInfo, uri, {
       eos: true
     })

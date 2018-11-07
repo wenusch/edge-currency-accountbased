@@ -57,7 +57,7 @@ export class XrpPlugin extends CurrencyPlugin {
     this.connectionClients = {}
   }
 
-  createPrivateKey (walletType: string) {
+  async createPrivateKey (walletType: string): Promise<Object> {
     const type = walletType.replace('wallet:', '')
 
     if (type === 'ripple' || type === 'ripple-secp256k1') {
@@ -75,7 +75,7 @@ export class XrpPlugin extends CurrencyPlugin {
     }
   }
 
-  derivePublicKey (walletInfo: EdgeWalletInfo) {
+  async derivePublicKey (walletInfo: EdgeWalletInfo): Promise<Object> {
     const type = walletInfo.type.replace('wallet:', '')
     if (type === 'ripple' || type === 'ripple-secp256k1') {
       const keypair = keypairs.deriveKeypair(walletInfo.keys.rippleKey)
@@ -105,7 +105,7 @@ export class XrpPlugin extends CurrencyPlugin {
     return out
   }
 
-  parseUri (uri: string) {
+  async parseUri (uri: string): Promise<EdgeParsedUri> {
     const networks = { ripple: true }
     const RIPPLE_DOT_COM_URI_PREFIX = 'https://ripple.com//send'
 

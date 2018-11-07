@@ -32,20 +32,34 @@ for (const fixture of fixtures) {
         done()
       })
     })
-    it('ripple.com invalid URIs', function () {
-      assert.throws(() => {
-        plugin.parseUri(
-          fixture['parseUri']['ripple.com invalid uri handler'][0]
-        )
+    it('ripple.com invalid URIs', function (done) {
+      plugin.parseUri(
+        fixture['parseUri']['ripple.com invalid uri handler'][0]
+      ).then(() => {
+        assert.equal(0, 1)
+      }).catch(() => {
+        done()
       })
-      assert.throws(() => {
-        plugin.parseUri(fixture['parseUri']['ripple.com invalid uri domain'][0])
+      plugin.parseUri(
+        fixture['parseUri']['ripple.com invalid uri domain'][0]
+      ).then(() => {
+        assert.equal(0, 1)
+      }).catch(() => {
+        done()
       })
-      assert.throws(() => {
-        plugin.parseUri(fixture['parseUri']['ripple.com invalid uri path'][0])
+      plugin.parseUri(
+        fixture['parseUri']['ripple.com invalid uri path'][0]
+      ).then(() => {
+        assert.equal(0, 1)
+      }).catch(() => {
+        done()
       })
-      assert.throws(() => {
-        plugin.parseUri(fixture['parseUri']['ripple.com invalid uri param'][0])
+      plugin.parseUri(
+        fixture['parseUri']['ripple.com invalid uri param'][0]
+      ).then(() => {
+        assert.equal(0, 1)
+      }).catch(() => {
+        done()
       })
     })
 
