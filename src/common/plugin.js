@@ -28,11 +28,11 @@ export class CurrencyPlugin {
     this.highestTxHeight = 0
   }
 
-  createPrivateKey (walletType: string) {
+  async createPrivateKey (walletType: string): Promise<Object> {
     throw new Error('Must implement createPrivateKey')
   }
 
-  derivePublicKey (walletInfo: EdgeWalletInfo) {
+  async derivePublicKey (walletInfo: EdgeWalletInfo): Promise<Object> {
     throw new Error('Must implement derivePublicKey')
   }
 
@@ -43,11 +43,11 @@ export class CurrencyPlugin {
     throw new Error('Must implement makeEngine')
   }
 
-  parseUri (uri: string) {
+  async parseUri (uri: string): Promise<EdgeParsedUri> {
     throw new Error('Must implement parseUri')
   }
 
-  encodeUri (obj: EdgeEncodeUri) {
+  async encodeUri (obj: EdgeEncodeUri): Promise<string> {
     throw new Error('Must implement encodeUri')
   }
 

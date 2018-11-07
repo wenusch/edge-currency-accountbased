@@ -64,20 +64,20 @@ for (const fixture of fixtures) {
 
   describe(`Create Plugin for Wallet type ${WALLET_TYPE}`, function () {
     it('Plugin', function () {
-      return context.getCurrencyPlugins().then(currencyPlugins => {
+      return context.getCurrencyPlugins().then(async (currencyPlugins) => {
         const currencyPlugin = currencyPlugins[0]
         assert.equal(
           currencyPlugin.currencyInfo.currencyCode,
           fixture['Test Currency code']
         )
         plugin = currencyPlugin
-        keys = plugin.createPrivateKey(WALLET_TYPE)
+        keys = await plugin.createPrivateKey(WALLET_TYPE)
         const info: EdgeWalletInfo = {
           id: '1',
           type: WALLET_TYPE,
           keys
         }
-        keys = plugin.derivePublicKey(info)
+        keys = await plugin.derivePublicKey(info)
       })
     })
   })
