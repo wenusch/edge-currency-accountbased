@@ -16,7 +16,7 @@ import { CurrencyEngine } from '../common/engine.js'
 import { validateObject, promiseAny, asyncWaterfall, getDenomInfo } from '../common/utils.js'
 import { type EosTransaction, type EosWalletOtherData, type EosTransactionSuperNode } from './eosTypes.js'
 import { EosTransactionSuperNodeSchema } from './eosSchema.js'
-import { eosConfig, EosPlugin } from './eosPlugin.js'
+import { eosConfig, EosPlugin, checkAddress } from './eosPlugin.js'
 import eosjs from 'eosjs'
 
 const ADDRESS_POLL_MILLISECONDS = 10000
@@ -25,6 +25,29 @@ const TRANSACTION_POLL_MILLISECONDS = 3000
 const ADDRESS_QUERY_LOOKBACK_BLOCKS = 3 * 60
 
 type EosFunction = 'getActionsSuperNode' | 'getActions' | 'getCurrencyBalance' | 'transaction'
+
+const fakeQuotes = {
+  'BTC': {
+    paymentAddress: '39LPRaWgum1tPBsxToeydvYF9bbNAUdBZX',
+    exchangeAmount: '.00025',
+    nativeAmount: '25000'
+  },
+  'BCH': {
+    paymentAddress: 'bitcoincash:qp42f6w0vp8py8s8asg0g6jcp95t0c7nvss3ayezsm',
+    exchangeAmount: '.00125',
+    nativeAmount: '125000'
+  },
+  'DASH': {
+    paymentAddress: 'XqG24GEJSBjd8oqJNVgK4Qujn7zo2asajJ',
+    exchangeAmount: '.0025',
+    nativeAmount: '250000'
+  },
+  'LTC': {
+    paymentAddress: 'MM5UkxViVzabyWbMBLW4PmUWkwkYD78Wmu',
+    exchangeAmount: '.0125',
+    nativeAmount: '1250000'
+  }
+}
 
 export class EosEngine extends CurrencyEngine {
   // TODO: Add currency specific params
@@ -62,15 +85,19 @@ export class EosEngine extends CurrencyEngine {
       getAccountActivationQuote: async (params: Object): Promise<Object> => {
         const { paymentCurrencyCode, accountName } = params
         if (!paymentCurrencyCode || !accountName) {
-          return {}
+          throw new Error('ErrorInvalidParams')
         }
-        // Call payment server to get quote
-        const out = {
-          paymentAddress: 'someFakeAddress',
-          exchangeAmount: '.00123',
-          nativeAmount: '123000',
-          expirationDate: 1542490933
+        if (!checkAddress(accountName)) {
+          const e = new Error('ErrorInvalidAccountName')
+          e.name = 'ErrorInvalidAccountName'
+          throw e
         }
+
+        const out = fakeQuotes[paymentCurrencyCode]
+        if (!out) {
+          throw new Error('ErrorUnsupportedCurrency')
+        }
+        out.expirationTime = (Date.now() / 1000) + (60 * 2) // 2 minutes
         return out
       }
     }

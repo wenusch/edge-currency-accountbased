@@ -34,7 +34,7 @@ let io
 
 const validCharacters = '12345abcdefghijklmnopqrstuvwxyz'
 
-function checkAddress (address: string): boolean {
+export function checkAddress (address: string): boolean {
   // TODO: Check for a valid address format. The passed in
   // address would be a use visible displayed address such as what would
   // go into a QR code
@@ -71,24 +71,27 @@ export class EosPlugin extends CurrencyPlugin {
       getActivationCost: async (): Promise<string> => {
         return '0.1000' // this is an exchangeAmount in units of full EOS
       },
-      validateAccount: async (account: string): Promise<Object> => {
+      validateAccount: async (account: string): Promise<boolean> => {
         const valid = checkAddress(account)
-        const out = { result: '', err_msg: undefined }
+        const out = {result: ''}
         if (!valid) {
-          out.result = 'ErrorInvalidAccountName'
+          const e = new Error('ErrorInvalidAccountName')
+          e.name = 'ErrorInvalidAccountName'
+          throw e
         }
         try {
           const result = await this.getAccSystemStats(account)
           if (result) {
-            out.result = 'ErrorAccountUnavailable'
+            const e = new Error('ErrorAccountUnavailable')
+            e.name = 'ErrorAccountUnavailable'
+            throw e
           }
-          out.result = 'ErrorUnknownError'
+          throw new Error('ErrorUnknownError')
         } catch (e) {
           if (e.code === 'ErrorUnknownAccount') {
             out.result = 'AccountAvailable'
           } else {
-            out.result = 'ErrorUnknownError'
-            out.err_msg = e.message
+            throw e
           }
         }
         console.log(`validateAccount: result=${out.result}`)
