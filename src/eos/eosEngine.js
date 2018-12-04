@@ -294,10 +294,10 @@ export class EosEngine extends CurrencyEngine {
             this.processTransaction(action)
           }
         }
-        this.transactionsChecked = 1
       }
 
       this.updateOnAddressesChecked()
+      this.walletLocalData.lastAddressQueryHeight = blockHeight
     } catch (e) {
       this.log(e)
     }
@@ -307,15 +307,6 @@ export class EosEngine extends CurrencyEngine {
       )
       this.transactionsChangedArray = []
     }
-  }
-
-  updateOnAddressesChecked () {
-    if (this.addressesChecked === 1) {
-      return
-    }
-    this.addressesChecked =
-      (this.balancesChecked + this.transactionsChecked) / 2
-    this.currencyEngineCallbacks.onAddressesChecked(this.addressesChecked)
   }
 
   async multicastServers (func: EosFunction, ...params: any): Promise<any> {
