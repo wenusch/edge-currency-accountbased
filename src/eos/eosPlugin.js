@@ -61,12 +61,10 @@ export class EosPlugin extends CurrencyPlugin {
     this.eosServer = eosjs(eosConfig)
     this.otherMethods = {
       getActivationSupportedCurrencies: async (): Promise<Object> => {
-        return {
-          'BTC': true,
-          'BCH': true,
-          'DASH': true,
-          'LTC': true
-        }
+        const eosPaymentServer = this.currencyInfo.defaultSettings.otherSettings.eosPaymentServers[0]
+        const response = await io.fetch(`${eosPaymentServer}/api/vi/getSupportedCurrencies`)
+        const out = response.json()
+        return out
       },
       getActivationCost: async (): Promise<string> => {
         return '0.1000' // this is an exchangeAmount in units of full EOS

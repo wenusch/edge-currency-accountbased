@@ -24,7 +24,7 @@ const BLOCKCHAIN_POLL_MILLISECONDS = 15000
 const TRANSACTION_POLL_MILLISECONDS = 3000
 const ADDRESS_QUERY_LOOKBACK_BLOCKS = 3 * 60
 
-type EosFunction = 'getActionsSuperNode' | 'getActions' | 'getCurrencyBalance' | 'transaction'
+type EosFunction = 'getActionsSuperNode' | 'getActions' | 'getCurrencyBalance' | 'transaction' | 'actionsPaymentServer'
 
 const fakeQuotes = {
   'BTC': {
@@ -93,6 +93,10 @@ export class EosEngine extends CurrencyEngine {
           throw e
         }
 
+        const options = {
+          method: 'POST',
+          
+        }
         const out = fakeQuotes[paymentCurrencyCode]
         if (!out) {
           throw new Error('ErrorUnsupportedCurrency')
