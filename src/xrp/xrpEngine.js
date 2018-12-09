@@ -178,6 +178,7 @@ export class XrpEngine extends CurrencyEngine {
   }
 
   async checkTransactionsInnerLoop () {
+    const blockHeight = this.walletLocalData.blockHeight
     const address = this.walletLocalData.publicKey
     let startBlock: number = 0
     if (
@@ -221,6 +222,7 @@ export class XrpEngine extends CurrencyEngine {
           this.transactionsChangedArray = []
         }
         this.updateOnAddressesChecked()
+        this.walletLocalData.lastAddressQueryHeight = blockHeight
       } else {
         this.log('Invalid data returned from rippleApi.getTransactions')
       }
@@ -230,15 +232,6 @@ export class XrpEngine extends CurrencyEngine {
       this.log(e)
       this.log(`Error fetching transactions: ${JSON.stringify(e)}`)
     }
-  }
-
-  updateOnAddressesChecked () {
-    if (this.addressesChecked) {
-      return
-    }
-    this.addressesChecked = 1
-    this.walletLocalData.lastAddressQueryHeight = this.walletLocalData.blockHeight
-    this.currencyEngineCallbacks.onAddressesChecked(1)
   }
 
   async checkUnconfirmedTransactionsFetch () {}

@@ -57,8 +57,6 @@ export class EosEngine extends CurrencyEngine {
   // to the EosEngine class definition in eosEngine.js and initialize them in the
   // constructor()
   eosPlugin: EosPlugin
-  balancesChecked: number
-  transactionsChecked: number
   activatedAccountsCache: { [publicAddress: string]: boolean }
   otherData: EosWalletOtherData
   otherMethods: Object
@@ -72,8 +70,6 @@ export class EosEngine extends CurrencyEngine {
     super(currencyPlugin, io_, walletInfo, opts)
 
     this.eosPlugin = currencyPlugin
-    this.balancesChecked = 0
-    this.transactionsChecked = 0
     this.activatedAccountsCache = {}
     this.otherMethods = {
       getAccountActivationQuote: async (params: Object): Promise<Object> => {
@@ -261,6 +257,7 @@ export class EosEngine extends CurrencyEngine {
   }
 
   async checkTransactionsInnerLoop () {
+    const blockHeight = this.walletLocalData.blockHeight
     try {
       let startBlock: number = 0
       if (this.walletLocalData.lastAddressQueryHeight > ADDRESS_QUERY_LOOKBACK_BLOCKS) {
@@ -282,7 +279,6 @@ export class EosEngine extends CurrencyEngine {
             this.processTransactionSuperNode(action)
           }
         }
-        this.transactionsChecked = 1
       } catch (e) {
         // Try regular nodes
         const actionsObject = await this.multicastServers('getActions',
