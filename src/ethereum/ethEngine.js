@@ -387,7 +387,7 @@ export class EthereumEngine extends CurrencyEngine {
       txid: addHexPrefix(tx.hash),
       date: epochTime,
       currencyCode: 'ETH',
-      blockHeight: tx.block_height,
+      blockHeight: 0,
       nativeAmount,
       networkFee: tx.fees.toString(10),
       ourReceiveAddresses,

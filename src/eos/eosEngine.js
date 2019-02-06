@@ -162,6 +162,7 @@ export class EosEngine extends CurrencyEngine {
       nativeAmount = `-${nativeAmount}`
     }
 
+    const blockHeight = block_num > 0 ? block_num : 0
     const edgeTransaction: EdgeTransaction = {
       txid: trx_id,
       date: Date.parse(block_time) / 1000,

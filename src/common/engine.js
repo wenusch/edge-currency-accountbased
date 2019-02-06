@@ -28,13 +28,16 @@ import {
   TXID_LIST_FILE,
   TXID_MAP_FILE,
   WalletLocalData,
-  type CustomToken
+  type CustomToken, UNCONFIRMED_TXID_MAP_FILE
 } from './types.js'
 import { isHex, normalizeAddress, validateObject, getDenomInfo } from './utils.js'
 import { CurrencyPlugin } from './plugin.js'
 
 const SAVE_DATASTORE_MILLISECONDS = 10000
+const CLEAR_UNCONFIRMED_TXS_MS = 60000
 const MAX_TRANSACTIONS = 1000
+const UNCONFIRMED_TX_MAX_LIFE_MS = 1000 * 60 * 60 * 8 // 8 hours
+
 class CurrencyEngine {
   currencyPlugin: CurrencyPlugin
   walletInfo: EdgeWalletInfo
@@ -50,6 +53,7 @@ class CurrencyEngine {
   transactionsLoaded: boolean
   transactionList: { [currencyCode: string]: Array<EdgeTransaction> }
   txIdMap: { [currencyCode: string]: { [txid: string]: number } } // Maps txid to index of tx in
+  unconfirmedTxidMap: { [currencyCode: string]: { [txid: string]: number } } // Maps txid to index of tx in
   txIdList: { [currencyCode: string]: Array<string> } // Map of array of txids in chronological order
   transactionsChangedArray: Array<EdgeTransaction> // Transactions that have changed and need to be added
   currencyInfo: EdgeCurrencyInfo
@@ -82,6 +86,7 @@ class CurrencyEngine {
     this.transactionListDirty = false
     this.transactionsLoaded = false
     this.txIdMap = {}
+    this.unconfirmedTxidMap = {}
     this.txIdList = {}
     this.walletInfo = walletInfo
     this.walletId = walletInfo.id ? `${walletInfo.id} - ` : ''
@@ -92,6 +97,7 @@ class CurrencyEngine {
 
     this.transactionList[currencyCode] = []
     this.txIdMap[currencyCode] = {}
+    this.unconfirmedTxidMap[currencyCode] = {}
     this.txIdList[currencyCode] = []
 
     if (opts.optionalSettings === undefined) {
@@ -123,6 +129,7 @@ class CurrencyEngine {
     const folder = this.walletLocalFolder.folder(DATA_STORE_FOLDER)
     let txIdList
     let txIdMap
+    let unconfirmedTxidMap
     let transactionList
     try {
       const result = await folder.file(TXID_LIST_FILE).getText()
@@ -137,6 +144,13 @@ class CurrencyEngine {
     } catch (e) {
       this.log('Could not load txidMap file. Failure is ok on new device')
       await folder.file(TXID_MAP_FILE).setText(JSON.stringify(this.txIdMap))
+    }
+    try {
+      const result = await folder.file(UNCONFIRMED_TXID_MAP_FILE).getText()
+      unconfirmedTxidMap = JSON.parse(result)
+    } catch (e) {
+      this.log('Could not load unconfirmedTxidMap file. Failure is ok on new device')
+      await folder.file(UNCONFIRMED_TXID_MAP_FILE).setText(JSON.stringify(this.unconfirmedTxidMap))
     }
 
     try {
@@ -161,6 +175,7 @@ class CurrencyEngine {
       this.transactionList = transactionList || this.transactionList
       this.txIdList = txIdList || this.txIdList
       this.txIdMap = txIdMap || this.txIdMap
+      this.unconfirmedTxidMap = unconfirmedTxidMap || this.unconfirmedTxidMap
     } else {
       // Manually add transactions via addTransaction()
       for (const cc in transactionList) {
@@ -232,6 +247,10 @@ class CurrencyEngine {
   }
 
   addTransaction (currencyCode: string, edgeTransaction: EdgeTransaction) {
+    if (edgeTransaction.blockHeight === 0) {
+      const now = Date.now() / 1000
+      edgeTransaction.otherParams.unconfirmedLastSeenTime = now
+    }
     // Add or update tx in transactionList
     const txid = normalizeAddress(edgeTransaction.txid)
     const idx = this.findTransaction(currencyCode, txid)
@@ -258,6 +277,7 @@ class CurrencyEngine {
       const edgeTx = transactionsArray[idx]
 
       if (
+        edgeTx.otherParams.unconfirmedLastSeenTime !== edgeTransaction.otherParams.unconfirmedLastSeenTime ||
         edgeTx.blockHeight !== edgeTransaction.blockHeight ||
         edgeTx.networkFee !== edgeTransaction.networkFee ||
         edgeTx.nativeAmount !== edgeTransaction.nativeAmount ||
@@ -282,11 +302,14 @@ class CurrencyEngine {
       // Add to txidMap
       const txIdList: Array<string> = []
       let i = 0
+      this.txIdMap[currencyCode] = {}
+      this.unconfirmedTxidMap[currencyCode] = {}
       for (const tx of this.transactionList[currencyCode]) {
-        if (!this.txIdMap[currencyCode]) {
-          this.txIdMap[currencyCode] = {}
+        const normalizedAddress = normalizeAddress(tx.txid)
+        this.txIdMap[currencyCode][normalizedAddress] = i
+        if (tx.blockHeight === 0) {
+          this.unconfirmedTxidMap[currencyCode][normalizedAddress] = i
         }
-        this.txIdMap[currencyCode][normalizeAddress(tx.txid)] = i
         txIdList.push(normalizeAddress(tx.txid))
         i++
       }
@@ -358,6 +381,16 @@ class CurrencyEngine {
           .setText(jsonString)
           .catch(e => {
             this.log('Error saving txIdMap')
+            this.log(e)
+          })
+      )
+      jsonString = JSON.stringify(this.unconfirmedTxidMap)
+      promises.push(
+        folder
+          .file(UNCONFIRMED_TXID_MAP_FILE)
+          .setText(jsonString)
+          .catch(e => {
+            this.log('Error saving unconfirmedTxidMap')
             this.log(e)
           })
       )
@@ -444,8 +477,31 @@ class CurrencyEngine {
     console.log(...text)
   }
 
+  async cleanUnconfirmedTxs () {
+    const now = Date.now() / 1000
+    for (const currencyCode in this.unconfirmedTxidMap) {
+      for (const txid in this.unconfirmedTxidMap[currencyCode]) {
+        const index = this.unconfirmedTxidMap[currencyCode][txid]
+        const tx = this.transactionList[currencyCode][index]
+        const timeDelta = now - tx.otherParams.unconfirmedLastSeenTime
+        if (timeDelta > UNCONFIRMED_TX_MAX_LIFE_MS) {
+          // Mark tx as dropped
+          tx.blockHeight = -1
+          this.transactionsChangedArray.push(tx)
+        }
+      }
+    }
+    if (this.transactionsChangedArray.length > 0) {
+      this.currencyEngineCallbacks.onTransactionsChanged(
+        this.transactionsChangedArray
+      )
+      this.transactionsChangedArray = []
+    }
+  }
+
   async startEngine () {
     this.addToLoop('saveWalletLoop', SAVE_DATASTORE_MILLISECONDS)
+    this.addToLoop('cleanUnconfirmedTxs', CLEAR_UNCONFIRMED_TXS_MS)
   }
 
   // *************************************
