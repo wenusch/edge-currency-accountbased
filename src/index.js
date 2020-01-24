@@ -13,6 +13,7 @@ import { makeRskPlugin } from './rsk/rskPlugin.js'
 import { makeStellarPlugin } from './stellar/stellarPlugin.js'
 import { makeTezosPlugin } from './tezos/tezosPlugin.js'
 import { makeRipplePlugin } from './xrp/xrpPlugin.js'
+import { makeCasinocoinPlugin } from './csc/cscPlugin'
 
 const plugins = {
   eos: makeEosPlugin,
@@ -23,7 +24,8 @@ const plugins = {
   stellar: makeStellarPlugin,
   tezos: makeTezosPlugin,
   rsk: makeRskPlugin,
-  binance: makeBinancePlugin
+  binance: makeBinancePlugin,
+  casinocoin: makeCasinocoinPlugin,
 }
 
 if (
